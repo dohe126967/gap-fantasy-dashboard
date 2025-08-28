@@ -1,0 +1,7 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/.netlify/functions/espn-proxy"
+  to = "/.netlify/functions/espn-proxy"
+  status = 200

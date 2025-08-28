@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>General Air Fantasy Football Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f3f3f3; padding: 20px; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th, td { padding: 8px; text-align: center; border: 1px solid #ccc; }
+    th { background-color: #003366; color: white; }
+    .relegation { background-color: #ffcccc; }
+    .section-header { font-size: 20px; margin-top: 40px; margin-bottom: 10px; border-bottom: 2px solid #003366; }
+  </style>
+</head>
+<body>
+  <h1>🏈 General Air Fantasy Football Dashboard</h1>
+
+  <h2>🔥 General Air – Advance Series (A League)</h2>
+  <div id="a-league-matchups"></div>
+  <div id="a-league-standings"></div>
+
+  <h2>🪄 General Air – Standard Series (B League)</h2>
+  <div id="b-league-matchups"></div>
+  <div id="b-league-standings"></div>
+
+  <script>
+    const year = 2025;
+    const leagues = {
+      a: { id: 28619535, name: "Advance Series" },
+      b: { id: 1816101066, name: "Standard Series" }
+    };
+
+    const buildStandingsTable = (teams, containerId, highlightBottom = false) => {
+      const sorted = [...teams].sort((a, b) => b.record.wins - a.record.wins || b.record.pointsFor - a.record.pointsFor);
+      let table = `<table><thead><tr><th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Pts For</th><th>Pts Against</th></tr></thead><tbody>`;
+      sorted.forEach((team, i) => {
+        const isBottom = highlightBottom && i >= sorted.length - 3;
+        table += `<tr class="${isBottom ? 'relegation' : ''}">
+          <td>${i + 1}</td>
+          <td>${team.location} ${team.nickname}</td>
+          <td>${team.owners[0]}</td>
+          <td>${team.record.wins}-${team.record.losses}</td>
+          <td>${team.record.pointsFor.toFixed(1)}</td>
+          <td>${team.record.pointsAgainst.toFixed(1)}</td>
+        </tr>`;
+      });
+      table += "</tbody></table>";
+      document.getElementById(containerId).innerHTML = table;
+    };
+
+    const buildMatchupsTable = (schedule, teams, containerId) => {
+      let table = `<table><thead><tr><th>Home Team</th><th>Score</th><th>Away Team</th><th>Score</th><th>Result</th></tr></thead><tbody>`;
+      schedule.forEach(match => {
+        const home = teams.find(t => t.id === match.home.teamId);
+        const away = teams.find(t => t.id === match.away.teamId);
+        const homeScore = match.home.totalPoints?.toFixed(1) ?? "—";
+        const awayScore = match.away.totalPoints?.toFixed(1) ?? "—";
+        let result = "TBD";
+        if (homeScore !== "—" && awayScore !== "—") {
+          if (homeScore > awayScore) result = `${home.location} ${home.nickname} Wins`;
+          else if (homeScore < awayScore) result = `${away.location} ${away.nickname} Wins`;
+          else result = "Tie";
+        }
+        table += `<tr><td>${home.location} ${home.nickname}</td><td>${homeScore}</td><td>${away.location} ${away.nickname}</td><td>${awayScore}</td><td>${result}</td></tr>`;
+      });
+      table += "</tbody></table>";
+      document.getElementById(containerId).innerHTML = table;
+    };
+
+    const fetchLeagueData = async (leagueKey, containerMatchups, containerStandings, highlightBottom = false) => {
+      const leagueId = leagues[leagueKey].id;
+      const url = `/.netlify/functions/espn-proxy?leagueId=${leagueId}&season=${year}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const teams = data.teams.map(team => ({
+          id: team.id,
+          location: team.location,
+          nickname: team.nickname,
+          record: {
+            wins: team.record.overall.wins,
+            losses: team.record.overall.losses,
+            pointsFor: team.record.overall.pointsFor,
+            pointsAgainst: team.record.overall.pointsAgainst
+          },
+          owners: data.members.filter(m => m.id === team.primaryOwner).map(m => m.firstName + " " + m.lastName)
+        }));
+        const week = data.schedule.filter(m => m.matchupPeriodId === 1 && m.home && m.away);
+        buildMatchupsTable(week, teams, containerMatchups);
+        buildStandingsTable(teams, containerStandings, highlightBottom);
+      } catch (err) {
+        document.getElementById(containerStandings).innerHTML = `<p>Error loading data for ${leagues[leagueKey].name}</p>`;
+        console.error(err);
+      }
+    };
+
+    fetchLeagueData("a", "a-league-matchups", "a-league-standings", true);
+    fetchLeagueData("b", "b-league-matchups", "b-league-standings");
+  </script>
+</body>
+</html>

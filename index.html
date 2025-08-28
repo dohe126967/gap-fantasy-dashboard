@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>General Air Fantasy Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; background: #f4f4f4; }
+    h1 { text-align: center; margin-bottom: 40px; }
+    h2 { margin-top: 60px; color: #003366; border-bottom: 2px solid #003366; padding-bottom: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    th { background-color: #004990; color: white; }
+    .relegation { background-color: #ffdddd; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h1>🏈 General Air Fantasy Football Dashboard</h1>
+<div id="advance-league">
+  <h2>🔥 General Air – Advance Series (A League)</h2>
+  <table>
+    <thead><tr><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th><th>Status</th></tr></thead>
+    <tbody id="advance-body"><tr><td>Sample Team A1</td><td>Jim Doherty</td><td>2–0</td><td>246.8</td><td>198.3</td><td></td></tr><tr class="relegation"><td>Sample Team A12</td><td>Kyle Curran</td><td>0–2</td><td>152.3</td><td>280.5</td><td>At Risk of Relegation 🔻</td></tr></tbody>
+  </table>
+</div>
+<div id="standard-league">
+  <h2>💨 General Air – Standard Series (B League)</h2>
+  <table>
+    <thead><tr><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th></tr></thead>
+    <tbody id="standard-body"><tr><td>Sample Team B1</td><td>Jane Smith</td><td>1–1</td><td>205.2</td><td>201.4</td></tr></tbody>
+  </table>
+</div>
+</body>
+</html>

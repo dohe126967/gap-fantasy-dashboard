@@ -1,14 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>General Air Fantasy Dashboard</title>
+  <title>General Air Fantasy Football Dashboard</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f4f4f4; }
     h1 { text-align: center; margin-bottom: 40px; }
     h2 { margin-top: 60px; color: #003366; border-bottom: 2px solid #003366; padding-bottom: 5px; }
+    h3 { margin-top: 30px; color: #333; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
     th { background-color: #004990; color: white; }
@@ -16,20 +16,100 @@
   </style>
 </head>
 <body>
+
 <h1>🏈 General Air Fantasy Football Dashboard</h1>
+
 <div id="advance-league">
   <h2>🔥 General Air – Advance Series (A League)</h2>
+  <h3>Week <span id="current-week">?</span> Matchups</h3>
   <table>
-    <thead><tr><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th><th>Status</th></tr></thead>
-    <tbody id="advance-body"><tr><td>Sample Team A1</td><td>Jim Doherty</td><td>2–0</td><td>246.8</td><td>198.3</td><td></td></tr><tr class="relegation"><td>Sample Team A12</td><td>Kyle Curran</td><td>0–2</td><td>152.3</td><td>280.5</td><td>At Risk of Relegation 🔻</td></tr></tbody>
+    <thead><tr><th>Home Team</th><th>Score</th><th>Away Team</th><th>Score</th><th>Result</th></tr></thead>
+    <tbody id="advance-matchups"></tbody>
+  </table>
+
+  <h3>Standings</h3>
+  <table>
+    <thead><tr><th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Pts For</th><th>Pts Against</th><th>Week Score</th><th>Status</th></tr></thead>
+    <tbody id="advance-body"></tbody>
   </table>
 </div>
+
 <div id="standard-league">
   <h2>💨 General Air – Standard Series (B League)</h2>
+  <h3>Week <span id="current-week-b">?</span> Matchups</h3>
   <table>
-    <thead><tr><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th></tr></thead>
-    <tbody id="standard-body"><tr><td>Sample Team B1</td><td>Jane Smith</td><td>1–1</td><td>205.2</td><td>201.4</td></tr></tbody>
+    <thead><tr><th>Home Team</th><th>Score</th><th>Away Team</th><th>Score</th><th>Result</th></tr></thead>
+    <tbody id="standard-matchups"></tbody>
+  </table>
+
+  <h3>Standings</h3>
+  <table>
+    <thead><tr><th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Pts For</th><th>Pts Against</th><th>Week Score</th></tr></thead>
+    <tbody id="standard-body"></tbody>
   </table>
 </div>
+
+<script>
+const leagues = [
+  { id: 28619535, element: "advance", includeStatus: true },
+  { id: 1816101066, element: "standard", includeStatus: false }
+];
+const ownerIdToName = {
+  "12345": "Jim Doherty",
+  "67890": "Kyle Curran"
+};
+const currentSeason = new Date().getFullYear();
+const currentWeek = 1; // update manually as needed
+
+async function fetchLeague(league) {
+  const base = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${currentSeason}/segments/0/leagues/${league.id}`;
+  const [teamsRes, matchupsRes, standingsRes] = await Promise.all([
+    fetch(base + "?view=mTeam"), fetch(base + "?view=mMatchupScore"), fetch(base + "?view=mStandings")
+  ]);
+  const teams = await teamsRes.json();
+  const matchups = await matchupsRes.json();
+  const standings = await standingsRes.json();
+
+  const map = {};
+  teams.teams.forEach(t => {
+    map[t.id] = {
+      name: `${t.location} ${t.nickname}`,
+      manager: ownerIdToName[t.owners?.[0]] || t.owners?.[0] || "Unknown"
+    };
+  });
+
+  const bodyM = document.getElementById(`${league.element}-matchups`);
+  matchups.schedule.filter(m => m.matchupPeriodId === currentWeek).forEach(m => {
+    const home = map[m.home.teamId], away = map[m.away.teamId];
+    const sHome = (m.home.totalPoints||0).toFixed(1), sAway = (m.away.totalPoints||0).toFixed(1);
+    const result = sHome > sAway ? `${home.name} Wins` : sAway > sHome ? `${away.name} Wins` : "Tie";
+    bodyM.innerHTML += `<tr><td>${home.name}</td><td>${sHome}</td><td>${away.name}</td><td>${sAway}</td><td>${result}</td></tr>`;
+  });
+
+  const bodyS = document.getElementById(`${league.element}-body`);
+  const scoreMap = {};
+  matchups.schedule.forEach(m => {
+    scoreMap[m.home.teamId] = (m.home.totalPoints || 0).toFixed(1);
+    scoreMap[m.away.teamId] = (m.away.totalPoints || 0).toFixed(1);
+  });
+
+  const sorted = standings.teams.sort((a,b)=> b.record.overall.wins - a.record.overall.wins);
+  sorted.forEach((t,i)=> {
+    const rec = t.record.overall;
+    const weekScore = scoreMap[t.id] || "-";
+    const isAtRisk = league.includeStatus && i >= sorted.length-3;
+    bodyS.innerHTML += `<tr${isAtRisk? ' class="relegation"': ''}>
+      <td>${i+1}</td><td>${map[t.id].name}</td><td>${map[t.id].manager}</td>
+      <td>${rec.wins}-${rec.losses}-${rec.ties}</td><td>${rec.pointsFor.toFixed(1)}</td>
+      <td>${rec.pointsAgainst.toFixed(1)}</td><td>${weekScore}</td>${league.includeStatus? `<td>${isAtRisk? "At Risk of Relegation 🔻" : ""}</td>` : ""}
+    </tr>`;
+  });
+}
+
+leagues.forEach(fetchLeague);
+document.getElementById("current-week").textContent = currentWeek;
+document.getElementById("current-week-b").textContent = currentWeek;
+</script>
+
 </body>
 </html>

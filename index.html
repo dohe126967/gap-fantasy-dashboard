@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>General Air Fantasy Football Dashboard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f3f3f3;
       padding: 20px;
-      background: #f0f0f0;
     }
     h1 {
       text-align: center;
@@ -26,86 +27,45 @@
       background-color: #003366;
       color: white;
     }
-    .at-risk {
-      background-color: #ffdddd;
+    .relegation {
+      background-color: #ffcccc;
+    }
+    .section-header {
+      font-size: 20px;
+      margin-top: 40px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #003366;
     }
   </style>
 </head>
 <body>
   <h1>🏈 General Air Fantasy Football Dashboard</h1>
 
-  <div id="advance-series">
-    <h2>🔥 General Air – Advance Series (A League)</h2>
-    <h3>Standings</h3>
-    <table id="advance-standings">
-      <thead>
-        <tr>
-          <th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <h2>🔥 General Air – Advance Series (A League)</h2>
+  <div id="a-league-matchups"></div>
+  <div id="a-league-standings"></div>
 
-  <div id="standard-series">
-    <h2>💨 General Air – Standard Series (B League)</h2>
-    <h3>Standings</h3>
-    <table id="standard-standings">
-      <thead>
-        <tr>
-          <th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Points For</th><th>Points Against</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <h2>🪄 General Air – Standard Series (B League)</h2>
+  <div id="b-league-matchups"></div>
+  <div id="b-league-standings"></div>
 
   <script>
-    const leagueIds = {
-      "advance": 28619535,
-      "standard": 1816101066
+    const year = 2025;
+    const leagues = {
+      a: { id: 28619535, name: "Advance Series" },
+      b: { id: 1816101066, name: "Standard Series" }
     };
 
-    const fetchStandings = async (leagueKey, leagueId) => {
-      const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/2025/segments/0/leagues/${leagueId}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const buildStandingsTable = (teams, containerId, highlightBottom = false) => {
+      const sorted = [...teams].sort((a, b) => b.record.wins - a.record.wins || b.record.pointsFor - a.record.pointsFor);
 
-      try {
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        const teams = data.teams;
+      let table = `<table><thead><tr>
+        <th>Rank</th><th>Team</th><th>Manager</th><th>Record</th><th>Pts For</th><th>Pts Against</th>
+      </tr></thead><tbody>`;
 
-        const tableBody = document.querySelector(`#${leagueKey}-standings tbody`);
-        teams.sort((a, b) => a.rankFinal - b.rankFinal);
-
-        teams.forEach((team, index) => {
-          const owner = team.owners?.[0] || 'N/A';
-          const settings = team.record.overall;
-          const row = document.createElement('tr');
-
-          if (leagueKey === "advance" && index >= teams.length - 3) {
-            row.classList.add("at-risk");
-          }
-
-          row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${team.location} ${team.nickname}</td>
-            <td>${owner}</td>
-            <td>${settings.wins}-${settings.losses}</td>
-            <td>${team.points?.total || 0}</td>
-            <td>${team.pointsAgainst || 0}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-
-      } catch (error) {
-        console.error(`Error fetching standings for ${leagueKey}:`, error);
-      }
-    };
-
-    fetchStandings("advance", leagueIds.advance);
-    fetchStandings("standard", leagueIds.standard);
-  </script>
-</body>
-</html>
+      sorted.forEach((team, i) => {
+        const isBottom = highlightBottom && i >= sorted.length - 3;
+        table += `<tr class="${isBottom ? 'relegation' : ''}">
+          <td>${i + 1}</td>
+          <td>${team.location} ${team.nickname}</td
 

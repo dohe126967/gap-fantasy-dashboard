@@ -10,14 +10,31 @@ export async function handler(event) {
     };
   }
 
-  const espnUrl = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${seasonId}/segments/0/leagues/${leagueId}?view=mTeam`;
+  const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${seasonId}/segments/0/leagues/${leagueId}?view=mTeam`;
 
   try {
-    const response = await fetch(espnUrl, {
+    const response = await fetch(url, {
       headers: {
-        cookie: process.env.ESPN_COOKIE,
+        'X-Fantasy-Source': 'kona',
+        'X-Fantasy-Platform': 'kona-PROD-a7898f83',
+        'X-Fantasy-Filter': '{}',
+        'Referer': 'https://fantasy.espn.com/',
       },
     });
+
+    const contentType = response.headers.get('content-type');
+
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({
+          error: 'Failed to fetch data from ESPN',
+          details: 'Invalid content-type or error response',
+          raw: text,
+        }),
+      };
+    }
 
     const data = await response.json();
 
@@ -25,12 +42,12 @@ export async function handler(event) {
       statusCode: 200,
       body: JSON.stringify(data),
     };
-  } catch (error) {
+  } catch (err) {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: "Failed to fetch data from ESPN",
-        details: error.message,
+        error: 'Unexpected error',
+        details: err.message,
       }),
     };
   }

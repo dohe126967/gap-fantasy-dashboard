@@ -19,7 +19,8 @@ export async function handler(event) {
         'X-Fantasy-Platform': 'kona-PROD-a7898f83',
         'X-Fantasy-Filter': '{}',
         'Referer': 'https://fantasy.espn.com/',
-      },
+        'Cookie': `espn_s2=${process.env.ESPN_S2}; SWID=${process.env.SWID}`
+      }
     });
 
     const contentType = response.headers.get('content-type');

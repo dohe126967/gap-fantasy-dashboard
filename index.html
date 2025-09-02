@@ -1,95 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>General Air Fantasy Football Dashboard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2 {
       text-align: center;
     }
-
-    h1 {
-      margin-top: 30px;
-    }
-
     table {
-      margin: 20px auto;
+      width: 100%;
       border-collapse: collapse;
-      width: 90%;
+      margin-bottom: 50px;
     }
-
     th, td {
-      border: 1px solid #333;
-      padding: 10px;
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #ddd;
     }
-
     th {
-      background-color: #003366;
-      color: #fff;
+      background-color: #002e5d;
+      color: white;
     }
-
     .error {
+      text-align: center;
       color: red;
-      margin-bottom: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h1>General Air Fantasy Football Dashboard</h1>
 
-  <div>
+  <section id="advance-league">
     <h2>General Air – Advance Series</h2>
-    <div id="error-28619535" class="error"></div>
+    <div id="error-advance" class="error"></div>
     <table>
       <thead>
-        <tr><th>Team</th><th>Manager</th><th>Record</th></tr>
+        <tr>
+          <th>Team</th>
+          <th>Manager</th>
+          <th>Record</th>
+        </tr>
       </thead>
-      <tbody id="league-28619535"></tbody>
+      <tbody id="advance-table-body"></tbody>
     </table>
-  </div>
+  </section>
 
-  <div>
+  <section id="plus-league">
     <h2>General Air – Plus Series</h2>
-    <div id="error-1816101066" class="error"></div>
+    <div id="error-plus" class="error"></div>
     <table>
       <thead>
-        <tr><th>Team</th><th>Manager</th><th>Record</th></tr>
+        <tr>
+          <th>Team</th>
+          <th>Manager</th>
+          <th>Record</th>
+        </tr>
       </thead>
-      <tbody id="league-1816101066"></tbody>
+      <tbody id="plus-table-body"></tbody>
     </table>
-  </div>
+  </section>
 
   <script>
-    async function loadLeagueData(leagueId) {
-      const tableBody = document.getElementById(`league-${leagueId}`);
-      const errorDiv = document.getElementById(`error-${leagueId}`);
-
+    const fetchLeagueData = async (leagueId, seasonId, tableBodyId, errorId) => {
       try {
-        const response = await fetch(`/.netlify/functions/espn-proxy?leagueId=${leagueId}`);
-        if (!response.ok) throw new Error("Failed to fetch league data");
+        const res = await fetch(`/.netlify/functions/espn-proxy?leagueId=${leagueId}&seasonId=${seasonId}`);
+        const data = await res.json();
 
-        const data = await response.json();
+        if (!Array.isArray(data.teams)) {
+          throw new Error("Invalid response format");
+        }
 
+        const tableBody = document.getElementById(tableBodyId);
         data.teams.forEach(team => {
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${team.location} ${team.nickname}</td>
-            <td>${team.managers.map(m => m.firstName).join(", ")}</td>
+            <td>${team.owners.join(', ')}</td>
             <td>${team.record.overall.wins}-${team.record.overall.losses}</td>
           `;
           tableBody.appendChild(row);
         });
-      } catch (error) {
-        errorDiv.textContent = "Error loading data for this league.";
-        console.error(error);
+      } catch (err) {
+        console.error(err);
+        document.getElementById(errorId).innerText = "Error loading data for this league.";
       }
-    }
+    };
 
-    loadLeagueData(28619535);
-    loadLeagueData(1816101066);
+    // Advance Series League ID: 28619535
+    // Plus Series League ID: 1816101066
+    fetchLeagueData(28619535, 2025, 'advance-table-body', 'error-advance');
+    fetchLeagueData(1816101066, 2025, 'plus-table-body', 'error-plus');
   </script>
 </body>
 </html>

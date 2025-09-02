@@ -1,25 +1,45 @@
-export async function handler(event, context) {
+const fetch = require('node-fetch');
+
+exports.handler = async function(event) {
   const leagueId = event.queryStringParameters.leagueId;
-  const season = event.queryStringParameters.season || new Date().getFullYear();
 
-  const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${leagueId}?view=mTeam&view=mMatchupScore&view=mStandings`;
+  if (!leagueId) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Missing leagueId in query string" })
+    };
+  }
 
-  const headers = {
-    "Cookie": `espn_s2=${process.env.ESPN_S2}; SWID=${process.env.SWID}`,
-    "User-Agent": "Mozilla/5.0",
-    "X-Fantasy-Filter": JSON.stringify({}),
-  };
+  const espn_s2 = process.env.ESPN_S2;
+  const swid = process.env.SWID;
+
+  if (!espn_s2 || !swid) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Missing ESPN authentication tokens in environment variables" })
+    };
+  }
+
+  const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/2025/segments/0/leagues/${leagueId}?view=mTeam`;
 
   try {
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, {
+      headers: {
+        Cookie: `espn_s2=${espn_s2}; SWID=${swid};`
+      }
+    });
+
+    const contentType = response.headers.get('content-type');
+
+    if (!response.ok || !contentType.includes('application/json')) {
+      const text = await response.text(); // For debugging
+      throw new Error(`Invalid response: ${text}`);
+    }
+
     const data = await response.json();
 
     return {
       statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
       body: JSON.stringify(data)
     };
   } catch (err) {
@@ -32,4 +52,4 @@ export async function handler(event, context) {
       })
     };
   }
-}
+};

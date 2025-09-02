@@ -1,0 +1,9 @@
+{
+  "name": "gap-fantasy-dashboard",
+  "version": "1.0.0",
+  "description": "Fantasy dashboard for General Air Products",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
